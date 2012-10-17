@@ -2,10 +2,9 @@ metadata    :name        => "filemgr",
             :description => "File Manager",
             :author      => "Mike Pountney <mike.pountney@gmail.com>",
             :license     => "Apache 2",
-            :version     => "0.3",
+            :version     => "1.1",
             :url         => "http://www.puppetlabs.com/mcollective",
             :timeout     => 5
-
 
 action "touch", :description => "Creates an empty file or touch it's timestamp" do
     input :file,
@@ -98,3 +97,17 @@ action "status", :description => "Basic information about a file" do
            :description => "File type",
            :display_as => "Type"
 end
+
+action "list", :description => "Lists a given directory's contents" do
+    input :dir,
+        :prompt		  => "Directory",
+        :description => "Directory to list",
+        :type		    => :string,
+        :validation  => '^.+$',
+        :optional    => false,
+        :maxlength    => 256
+
+    output :name,
+           :description => "Hash of file stats",
+           :display_as => "File stats"   
+end 
