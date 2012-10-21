@@ -2,6 +2,7 @@ class MCollective::Application::Filemgr<MCollective::Application
 
   description "Generic File Manager Client"
   usage "Usage: mc-filemgr [--file FILE] [touch|remove|status]"
+  usage "Usage: mc-filemgr [--dir DIR] list"
   
   option :file,
          :description    => "File to manage",
@@ -48,9 +49,9 @@ class MCollective::Application::Filemgr<MCollective::Application
       if configuration[:details]
         mc.list(:dir => configuration[:directory]).each do |resp|
           printf("%-40s: %s\n", resp[:sender], resp[:data][:statusmsg])
-          files = resp[:data].sort_by { |key, val| key }
+          files = resp[:data][:directory].sort_by { |key, val| key }
           files.each do |key,val|
-            printf("%5s%s\t%s\t%s\t%s\t%s\n", "", val[:uid], val[:gid], val[:size], val[:mtime], key)
+            printf("%5s%-12s\t%-12s\t%s\t%s\t%s\n", "", val[:uid_name], val[:gid_name], val[:size], val[:mtime], key)
           end
         end
       else

@@ -46,7 +46,7 @@ action "status", :description => "Basic information about a file" do
            :display_as => "Status"
 
     output :present,
-           :description => "Indicates if the file exist using 0 or 1",
+           :description => "Indicates if the file exists using 0 or 1",
            :display_as => "Present"
 
     output :size,
@@ -93,21 +93,30 @@ action "status", :description => "Basic information about a file" do
            :description => "File group",
            :display_as => "Group"
 
+    output :uid_name,
+           :description => "File owner user name",
+           :display_as => "Owner name"
+
+    output :gid_name,
+           :description => "File group name",
+           :display_as => "Group name"
+
     output :type,
            :description => "File type",
            :display_as => "Type"
 end
 
-action "list", :description => "Lists a given directory's contents" do
+action "list", :description => "Lists a directory's contents" do
     input :dir,
-        :prompt		  => "Directory",
+        :prompt      => "Directory",
         :description => "Directory to list",
-        :type		    => :string,
+        :type		     => :string,
         :validation  => '^.+$',
         :optional    => false,
         :maxlength    => 256
 
-    output :name,
-           :description => "Hash of file stats",
-           :display_as => "File stats"   
+    output :files,
+          :description => "Hash of files in the directory with file stats",
+          :display_as => "File details",
+          :default => {}
 end 

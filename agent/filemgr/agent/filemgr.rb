@@ -1,5 +1,6 @@
 require 'fileutils'
 require 'digest/md5'
+require 'etc'
 
 module MCollective
   module Agent
@@ -63,38 +64,44 @@ module MCollective
         results[:uid] = 0
         results[:gid] = 0
 
-
-        if File.exists?(file)
-          logger.debug("Asked for status of '#{file}' - it is present")
-          results[:output] = "present"
-          results[:present] = 1
-
-          if File.symlink?(file)
-            stat = File.lstat(file)
-          else
-            stat = File.stat(file)
-          end
-
-          [:size, :mtime, :ctime, :atime, :uid, :gid].each do |item|
-            results[item] = stat.send(item)
-          end
-
-          [:mtime, :ctime, :atime].each do |item|
-            results["#{item}_seconds".to_sym] = stat.send(item).to_i
-          end
-
-          results[:mode] = "%o" % [stat.mode]
-          results[:md5] = Digest::MD5.hexdigest(File.read(file)) if stat.file?
-          results[:type] = "directory" if stat.directory?
-          results[:type] = "file" if stat.file?
-          results[:type] = "symlink" if stat.symlink?
-          results[:type] = "socket" if stat.socket?
-          results[:type] = "chardev" if stat.chardev?
-          results[:type] = "blockdev" if stat.blockdev?
-        else
+        if !File.exists?(file)          
           logger.debug("Asked for status of '#{file}' - it is not present")
-          reply.fail! "#{file} does not exist"
+          reply.fail!("#{file} does not exist")
+        elsif !File.readable?(file)          
+          logger.debug("Asked for status of '#{file}' - permission denied")
+          reply.fail!("#{file} - permission denied")
         end
+
+        logger.debug("Asked for status of '#{file}' - it is present")
+        results[:output] = "present"
+        results[:present] = 1
+
+        if File.symlink?(file)
+          stat = File.lstat(file)
+        else
+          stat = File.stat(file)
+        end
+      
+        [:size, :mtime, :ctime, :atime, :uid, :gid].each do |item|
+          results[item] = stat.send(item)
+        end
+
+        [:mtime, :ctime, :atime].each do |item|
+          results["#{item}_seconds".to_sym] = stat.send(item).to_i
+        end
+
+        results[:uid_name] = Etc.getpwuid(stat.send(:uid)).name
+        results[:gid_name] = Etc.getgrgid(stat.send(:gid)).name
+
+        results[:mode] = "%o" % [stat.mode]
+        results[:md5] = Digest::MD5.hexdigest(File.read(file)) if stat.file?
+        results[:type] = "directory" if stat.directory?
+        results[:type] = "file" if stat.file?
+        results[:type] = "symlink" if stat.symlink?
+        results[:type] = "socket" if stat.socket?
+        results[:type] = "chardev" if stat.chardev?
+        results[:type] = "blockdev" if stat.blockdev?
+
         return results
       end
 
@@ -117,7 +124,7 @@ module MCollective
           reply.statusmsg = "OK"
         rescue
           logger.warn("Could not remove file '#{file}'")
-          reply.fail! "Could not remove file '#{file}'"
+          reply.fail!("Could not remove file '#{file}'")
         end
       end
 
@@ -128,25 +135,26 @@ module MCollective
           logger.debug("Touched file '#{file}'")
         rescue
           logger.warn("Could not touch file '#{file}'")
-          reply.fail! "Could not touch file '#{file}'"
+          reply.fail!("Could not touch file '#{file}'")
         end
       end
 
       def list
         dir = request[:dir]
+        directory = {}
         if File.directory?(dir)
           begin
             Dir.foreach(dir) do |entry|
-              full_path = File.join(dir, entry)
-              reply[entry.to_sym] = get_file_status(full_path)
+              directory[entry.to_sym] = get_file_status(File.join(dir, entry))
             end
-          rescue
-            logger.warn("Could not list directory '#{dir}'")
-            reply.fail! "Could not list directory '#{dir}'"
+            reply[:directory] = directory
+          rescue => e
+            logger.warn("Could not list directory '%s': %s" % [dir, e])
+            reply.fail!("Could not list directory '%s': %s" % [dir, e])
           end
         else
           logger.debug("Asked to list directory '#{dir}', but it does not exist")
-          reply.fail! "#{dir} does not exist"
+          reply.fail!("#{dir} does not exist")
         end
       end	
     end
