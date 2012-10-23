@@ -45,22 +45,23 @@ class MCollective::Application::Filemgr<MCollective::Application
         end
       end
 
-    when "list"
-      if configuration[:details]
-        mc.list(:dir => configuration[:directory]).each do |resp|
-          printf("%-40s: %s\n", resp[:sender], resp[:data][:statusmsg])
-          files = resp[:data][:directory].sort_by { |key, val| key }
-          files.each do |key,val|
-            printf("%5s%-12s\t%-12s\t%s\t%s\t%s\n", "", val[:uid_name], val[:gid_name], val[:size], val[:mtime], key)
+    when "list"      
+      mc.list(:dir => configuration[:directory]).each do |resp|
+        if resp[:statuscode] == 0  
+          printf("%-40s:\n", resp[:sender])
+          if configuration[:details]
+            files = resp[:data][:directory].sort_by { |key, val| key }
+            files.each do |key,val|
+              printf("%5s%-12s\t%-12s\t%s\t%s\t%s\n", "", val[:uid_name], val[:gid_name], val[:size], val[:mtime], key)
+            end
+          else
+            files = resp[:data][:directory].keys.sort
+            files.each do |key,val|
+              printf("%5s%s\n", "", key)
+            end
           end
-        end
-      else
-        mc.list(:dir => configuration[:directory]).each do |resp|
-          printf("%-40s: %s\n", resp[:sender], resp[:data][:statusmsg])
-          files = resp[:data].keys.sort
-          files.each do |key,val|
-            printf("%5s%s\n", "", key)
-          end
+        else 
+          printf("%-40s: %s\n", resp[:sender], resp[:statuscode])
         end
       end
 
