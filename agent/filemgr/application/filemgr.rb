@@ -50,9 +50,15 @@ class MCollective::Application::Filemgr<MCollective::Application
         if resp[:statuscode] == 0  
           printf("%-40s:\n", resp[:sender])
           if configuration[:details]
-            files = resp[:data][:directory].sort_by { |key, val| key }
-            files.each do |key,val|
-              printf("%5s%-12s\t%-12s\t%s\t%s\t%s\n", "", val[:uid_name], val[:gid_name], val[:size], val[:mtime], key)
+            files = resp[:data][:directory]
+            uid_max = files.values.max { |a, b| a[:uid_name].length <=> b[:uid_name].length }[:uid_name].length + 1
+            gid_max = files.values.max { |a, b| a[:gid_name].length <=> b[:gid_name].length }[:gid_name].length + 1
+            size_max = files.values.max { |a, b| a[:size].length <=> b[:size].length}[:size].length + 1
+            files.sort_by { |key, val| key }.each do |key,val|
+              uid = "%-#{uid_max}s" % val[:uid_name]
+              gid = "%-#{gid_max}s" % val[:gid_name]
+              size = "%-#{size_max}s" % val[:size]
+              print "%5s %s %s %s %s %s\n" % ["", uid, gid, size, val[:mtime], key]
             end
           else
             files = resp[:data][:directory].keys.sort
